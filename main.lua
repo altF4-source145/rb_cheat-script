@@ -77,19 +77,18 @@ local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 -- =======================================================
--- 1. НАСТРОЙКА ТВОЕГО АИМА (СВЯЗАН С КНОПКОЙ)
+-- 1. НАСТРОЙКА ТВОЕГО АИМА
 -- =======================================================
-_G.AimEnabled = false -- Переменная вкл/выкл для аима
+_G.AimEnabled = false 
 local isAiming = false
 local currentTarget = nil 
 
--- ТВОИ НАСТРОЙКИ КРУГА
 local FOV_RADIUS = 90         
 local CIRCLE_COLOR = Color3.fromRGB(255, 0, 50) 
 local CIRCLE_THICKNESS = 2.5    
 
 local fovCircle = Drawing.new("Circle")
-fovCircle.Visible = false -- Изначально круг скрыт
+fovCircle.Visible = false 
 fovCircle.Color = CIRCLE_COLOR
 fovCircle.Thickness = CIRCLE_THICKNESS
 fovCircle.NumSides = 64 
@@ -132,11 +131,10 @@ local function getClosestPlayerInFOV()
     return closestPlayer
 end
 
--- Основной постоянный цикл аимбота
 RunService.RenderStepped:Connect(function()
     if _G.AimEnabled then
         updateCirclePosition() 
-        fovCircle.Visible = true -- Показываем круг, если включено в меню
+        fovCircle.Visible = true 
 
         if isAiming and currentTarget and currentTarget.Character then
             local targetPart = currentTarget.Character:FindFirstChild("HumanoidRootPart")
@@ -149,7 +147,7 @@ RunService.RenderStepped:Connect(function()
             end
         end
     else
-        fovCircle.Visible = false -- Полностью прячем круг, если в меню ВЫКЛ
+        fovCircle.Visible = false 
         isAiming = false
         currentTarget = nil
     end
@@ -170,15 +168,14 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- Создаем кнопку аима в меню
 createToggle("АИМБОТ (ПКМ)", function(state)
-    _G.AimEnabled = state -- Меняем состояние аима при нажатии кнопки
+    _G.AimEnabled = state 
 end)
 
 -- =======================================================
--- 2. НАСТРОЙКА ТВОЕГО СКВОЗЬ СТЕНЫ (NOCLIP)
+-- 2. НАСТРОЙКА ИСПРАВЛЕННОГО СКВОЗЬ СТЕНЫ (NOCLIP)
 -- =======================================================
-_G.Noclip = false -- Изначально выключен
+_G.Noclip = false 
 
 RunService.Stepped:Connect(function()
     if _G.Noclip and localPlayer.Character then
@@ -192,6 +189,17 @@ end)
 
 createToggle("СКВОЗЬ СТЕНЫ", function(state)
     _G.Noclip = state 
+    
+    -- ИСПРАВЛЕНИЕ БАГА: если выключили, возвращаем осязаемость моментально
+    if not state and localPlayer.Character then
+        pcall(function()
+            for _, part in pairs(localPlayer.Character:GetChildren()) do
+                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then 
+                    part.CanCollide = true
+                end
+            end
+        end)
+    end
 end)
 
 -- =======================================================
