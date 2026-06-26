@@ -252,29 +252,45 @@ createToggle("SPEEDHACK", function(state)
 end)
 
 -- =======================================================
--- 4. SHIFTLOCK (ПРИВЯЗАН К КЛАВИШЕ LEFT SHIFT)
+-- 4. НАДЕЖНЫЙ ОФИЦИАЛЬНЫЙ SHIFTLOCK (ЧЕРЕЗ ИГРОВОЙ МОДУЛЬ)
 -- =======================================================
 local shiftLockActive = false
 
-RunService.RenderStepped:Connect(function()
-    if shiftLockActive then
-        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-        if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local root = localPlayer.Character.HumanoidRootPart
-            local _, y, _ = camera.CFrame:ToEulerAnglesYXZ()
-            root.CFrame = CFrame.new(root.Position) * CFrame.Angles(0, y, 0)
-        end
-    end
+-- Получаем доступ к системному модулю камеры Roblox
+local PlayerGui = localPlayer:WaitForChild("PlayerGui")
+local cameraModule
+pcall(function()
+    cameraModule = require(localPlayer.PlayerScripts:WaitForChild("PlayerModule")):GetCameras()
 end)
 
--- Отслеживание нажатия на левый Shift
+-- Функция переключения режима мыши и камеры
+local function toggleShiftLock(state)
+    shiftLockActive = state
+    pcall(function()
+        if cameraModule and cameraModule.activeCameraController then
+            -- Приказываем системной камере привязаться к персонажу (Официальный ShiftLock)
+            cameraModule.activeCameraController:SetIsMouseBound(state)
+        end
+    end)
+    if not state then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    else
+        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+    end
+end
+
+-- Отслеживание за нажатием Левого Шифта
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.LeftShift then
-        shiftLockActive = not shiftLockActive
-        if not shiftLockActive then
-            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-        end
+        toggleShiftLock(not shiftLockActive)
+    end
+end)
+
+-- Восстанавливаем дефолтное поведение камеры при удалении GUI хаба
+ScreenGui.AncestryChanged:Connect(function()
+    if not ScreenGui:IsDescendantOf(game) then
+        toggleShiftLock(false)
     end
 end)
 
@@ -282,4 +298,3 @@ end)
 local slToggle = createToggle("SHIFT LOCK", function() end)
 slToggle.Text = "SHIFT LOCK: BINDED [LSHIFT]"
 slToggle.BackgroundColor3 = Color3.fromRGB(45, 60, 75)
-slToggle.TextColor3 = Color3.fromRGB(150, 200, 255)
