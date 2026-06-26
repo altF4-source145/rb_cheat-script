@@ -1,14 +1,11 @@
--- REMOVE OLD VERSION IF RUNNING
 if game.CoreGui:FindFirstChild("Fleecaa4kMenu") then
     game.CoreGui.Fleecaa4kMenu:Destroy()
 end
 
--- CREATE GUI BASIS
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Fleecaa4kMenu"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 
--- MAIN WINDOW
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 250, 0, 260)
 MainFrame.Position = UDim2.new(0.5, -125, 0.4, -130)
@@ -22,7 +19,6 @@ local Corner = Instance.new("UICorner")
 Corner.CornerRadius = UDim.new(0, 10)
 Corner.Parent = MainFrame
 
--- TITLE
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -40, 0, 40)
 Title.Position = UDim2.new(0, 15, 0, 0)
@@ -34,7 +30,6 @@ Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.BackgroundTransparency = 1
 Title.Parent = MainFrame
 
--- CLOSE BUTTON (X) IN THE CORNER
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -35, 0, 5)
@@ -49,7 +44,6 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 6)
 CloseCorner.Parent = CloseBtn
 
--- OPEN BUTTON FOR MINIMIZED MENU
 local OpenBtn = Instance.new("TextButton")
 OpenBtn.Size = UDim2.new(0, 150, 0, 35)
 OpenBtn.Position = UDim2.new(0, 10, 0, 10) 
@@ -75,7 +69,6 @@ OpenBtn.MouseButton1Click:Connect(function()
     OpenBtn.Visible = false
 end)
 
--- TOGGLE CREATOR FUNCTION
 local buttonCount = 0
 local function createToggle(text, callback)
     buttonCount = buttonCount + 1
@@ -110,36 +103,25 @@ local function createToggle(text, callback)
     return ToggleBtn
 end
 
--- CORE SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
--- =======================================================
--- 1. AIMBOT SETTINGS
--- =======================================================
 _G.AimEnabled = false 
 local isAiming = false
 local currentTarget = nil 
 local FOV_RADIUS = 90         
-local CIRCLE_COLOR = Color3.fromRGB(255, 0, 50) 
-local CIRCLE_THICKNESS = 2.5    
 
 local fovCircle = Drawing.new("Circle")
 fovCircle.Visible = false 
-fovCircle.Color = CIRCLE_COLOR
-fovCircle.Thickness = CIRCLE_THICKNESS
+fovCircle.Color = Color3.fromRGB(255, 0, 50)
+fovCircle.Thickness = 2.5
 fovCircle.NumSides = 64 
 fovCircle.Radius = FOV_RADIUS
 fovCircle.Filled = false 
 fovCircle.Transparency = 1 
-
-local function updateCirclePosition()
-    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-    fovCircle.Position = screenCenter
-end
 
 local function isValidTarget(player)
     if player and player ~= localPlayer and player.Character then
@@ -175,7 +157,7 @@ end
 
 RunService.RenderStepped:Connect(function()
     if _G.AimEnabled then
-        updateCirclePosition() 
+        fovCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
         fovCircle.Visible = true
         if isAiming then
             if not currentTarget or not isValidTarget(currentTarget) then
@@ -210,9 +192,6 @@ createToggle("AIMBOT (RMB)", function(state)
     _G.AimEnabled = state 
 end)
 
--- =======================================================
--- 2. NOCLIP SETTINGS
--- =======================================================
 _G.Noclip = false 
 RunService.Stepped:Connect(function()
     if _G.Noclip and localPlayer.Character then
@@ -233,9 +212,6 @@ createToggle("NOCLIP", function(state)
     end
 end)
 
--- =======================================================
--- 3. SPEEDHACK SETTINGS
--- =======================================================
 local speedEnabled = false
 task.spawn(function()
     while task.wait(0.1) do
@@ -251,40 +227,44 @@ createToggle("SPEEDHACK", function(state)
     speedEnabled = state
 end)
 
--- =======================================================
--- 4. АВТОНОМНЫЙ SHIFTLOCK (СВОЙ ОБХОД КАМЕРЫ НА LEFT SHIFT)
--- =======================================================
+local shiftLockMainMaster = false
 local shiftLockActive = false
+local cameraOffset = Vector3.new(1.75, 0.5, 0)
 
 RunService.RenderStepped:Connect(function()
-    if shiftLockActive then
-        -- Принудительное центрирование мыши без вылетов
-        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-        
-        pcall(function()
-            if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") and localPlayer.Character:FindFirstChild("Humanoid") then
-                local root = localPlayer.Character.HumanoidRootPart
-                local humanoid = localPlayer.Character.Humanoid
-                
-                -- Заставляем тело персонажа смотреть строго туда же, куда направлена камера
-                local lookVector = camera.CFrame.LookVector
-                local yaw = math.atan2(-lookVector.X, -lookVector.Z)
-                root.CFrame = CFrame.new(root.Position) * CFrame.Angles(0, yaw, 0)
-                
-                -- Переводим анимацию бега в режим стрейфа (боком), чтобы ноги двигались красиво
-                humanoid.AutoRotate = false
-            end
-        end)
-    else
-        pcall(function()
+    pcall(function()
+        if shiftLockMainMaster and shiftLockActive and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") and localPlayer.Character:FindFirstChild("Humanoid") then
+            local root = localPlayer.Character.HumanoidRootPart
+            local humanoid = localPlayer.Character.Humanoid
+            local lookVector = camera.CFrame.LookVector
+            local yaw = math.atan2(-lookVector.X, -lookVector.Z)
+            root.CFrame = CFrame.new(root.Position) * CFrame.Angles(0, yaw, 0)
+            humanoid.CameraOffset = cameraOffset
+            humanoid.AutoRotate = false
+            UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+        else
             if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
+                localPlayer.Character.Humanoid.CameraOffset = Vector3.new(0, 0, 0)
                 localPlayer.Character.Humanoid.AutoRotate = true
             end
-        end)
+        end
+    end)
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed or not shiftLockMainMaster then return end
+    if input.KeyCode == Enum.KeyCode.LeftShift then
+        shiftLockActive = not shiftLockActive
+        if not shiftLockActive then
+            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        end
     end
 end)
 
--- Логика улавливания клика по левому Шифту
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.LeftShift then
+createToggle("SHIFT LOCK [LSHIFT]", function(state)
+    shiftLockMainMaster = state
+    if not state then
+        shiftLockActive = false
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    end
+end)
