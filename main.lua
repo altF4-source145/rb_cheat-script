@@ -247,49 +247,46 @@ createToggle("SPEEDHACK", function(state)
 end)
 
 -- =======================================================
--- 4. PLAYER VISIBILITY SETTINGS (ESP)
+-- 4. UNDETECTABLE DRAWING BOX ESP (БЕСПАЛЕВНЫЙ ВХ)
 -- =======================================================
 _G.EspEnabled = false
+local boxes = {}
 
-local function applyESP(player)
-    if player == localPlayer then return end
+-- Создаем скрытые рамки для рисования поверх экрана
+local function createEspBox(player)
+    if boxes[player] then return end
     
-    local function createHighlight()
-        if not _G.EspEnabled then return end
-        if player.Character and not player.Character:FindFirstChild("FleecaaESP") then
-            local highlight = Instance.new("Highlight")
-            highlight.Name = "FleecaaESP"
-            highlight.FillColor = Color3.fromRGB(0, 255, 150) 
-            highlight.FillTransparency = 0.5 
-            highlight.OutlineColor = Color3.fromRGB(255, 255, 255) 
-            highlight.OutlineTransparency = 0
-            highlight.Adornee = player.Character
-            highlight.Parent = player.Character
-        end
-    end
-
-    player.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        createHighlight()
-    end)
+    local box = Drawing.new("Square")
+    box.Visible = false
+    box.Color = Color3.fromRGB(0, 255, 150) -- Неоново-зеленый цвет рамок
+    box.Thickness = 2
+    box.Filled = false
     
-    createHighlight()
+    boxes[player] = box
 end
 
-for _, player in ipairs(Players:GetPlayers()) do applyESP(player) end
-Players.PlayerAdded:Connect(applyESP)
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= localPlayer then createEspBox(player) end
+end
 
-createToggle("PLAYER ESP (WH)", function(state)
-    _G.EspEnabled = state
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player.Character then
-            local existingESP = player.Character:FindFirstChild("FleecaaESP")
-            if state then
-                applyESP(player)
-            elseif existingESP then
-                existingESP:Destroy() 
-            end
-        end
+Players.PlayerAdded:Connect(function(player)
+    if player ~= localPlayer then createEspBox(player) end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    if boxes[player] then
+        boxes[player]:Remove()
+        boxes[player] = nil
     end
 end)
+
+-- Постоянный цикл обновления позиций рамок
+RunService.RenderStepped:Connect(function()
+    for player, box in pairs(boxes) do
+        if _G.EspEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local rootPart = player.Character.HumanoidRootPart
+            local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
+            
+            if onScreen then
+                -- Рассчитываем размер рамки в зависимости от дистанции до игрока
+                local scale = 1 / (screenPos.Z * math.tan(math.rad(camera.FieldOfView / 2))) * 1000
