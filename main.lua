@@ -1,4 +1,4 @@
--- REMOVE OLD VERSION IF RUNNING
+-- REMOVE OLD MENU & WINDOWS IF RUNNING
 if game.CoreGui:FindFirstChild("Fleecaa4kMenu") then
     game.CoreGui.Fleecaa4kMenu:Destroy()
 end
@@ -11,7 +11,7 @@ pcall(function() ScreenGui.Parent = game.CoreGui end)
 -- MAIN WINDOW
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 250, 0, 310)
-MainFrame.Position = UDim2.new(0.5, -125, 0.4, -155)
+MainFrame.Position = UDim2.new(0.5, -260, 0.4, -155) -- Сдвинут влево, чтобы освободить место справа
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -49,6 +49,32 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 6)
 CloseCorner.Parent = CloseBtn
 
+-- =======================================================
+-- ДОПОЛНИТЕЛЬНОЕ ОКНО ОПЦИЙ ESP (ИЗНАЧАЛЬНО СКРЫТО)
+-- =======================================================
+local EspFrame = Instance.new("Frame")
+EspFrame.Size = UDim2.new(0, 230, 0, 310)
+EspFrame.Position = UDim2.new(0.5, 5, 0.4, -155) -- Спавнится ровно справа от главного меню
+EspFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+EspFrame.BorderSizePixel = 0
+EspFrame.Active = true
+EspFrame.Draggable = true
+EspFrame.Visible = false -- Показывается только когда нажали кнопку ESP
+EspFrame.Parent = ScreenGui
+
+local EspCorner = Instance.new("UICorner")
+EspCorner.CornerRadius = UDim.new(0, 10)
+EspCorner.Parent = EspFrame
+
+local EspTitle = Instance.new("TextLabel")
+EspTitle.Size = UDim2.new(1, 0, 0, 40)
+EspTitle.Text = "ESP Settings"
+EspTitle.TextColor3 = Color3.fromRGB(0, 255, 150)
+EspTitle.Font = Enum.Font.GothamBold
+EspTitle.TextSize = 16
+EspTitle.BackgroundTransparency = 1
+EspTitle.Parent = EspFrame
+
 -- OPEN BUTTON FOR MINIMIZED MENU
 local OpenBtn = Instance.new("TextButton")
 OpenBtn.Size = UDim2.new(0, 150, 0, 35)
@@ -67,6 +93,7 @@ OpenCorner.Parent = OpenBtn
 
 CloseBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
+    EspFrame.Visible = false
     OpenBtn.Visible = true
 end)
 
@@ -75,19 +102,17 @@ OpenBtn.MouseButton1Click:Connect(function()
     OpenBtn.Visible = false
 end)
 
--- TOGGLE CREATOR FUNCTION
-local buttonCount = 0
-local function createToggle(text, callback)
-    buttonCount = buttonCount + 1
+-- ФУНКЦИЯ ДЛЯ СОЗДАНИЯ КНОПОК
+local function createToggle(parentFrame, text, yPos, callback)
     local ToggleBtn = Instance.new("TextButton")
     ToggleBtn.Size = UDim2.new(0, 210, 0, 45)
-    ToggleBtn.Position = UDim2.new(0, 20, 0, 50 + (buttonCount * 52) - 52)
+    ToggleBtn.Position = UDim2.new(0, (parentFrame == MainFrame) and 20 or 10, 0, yPos)
     ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     ToggleBtn.Text = text .. ": OFF"
     ToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
     ToggleBtn.Font = Enum.Font.GothamMedium
     ToggleBtn.TextSize = 14
-    ToggleBtn.Parent = MainFrame
+    ToggleBtn.Parent = parentFrame
 
     local BtnCorner = Instance.new("UICorner")
     BtnCorner.CornerRadius = UDim.new(0, 6)
@@ -201,7 +226,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-createToggle("AIMBOT (RMB)", function(state)
+createToggle(MainFrame, "AIMBOT (RMB)", 50, function(state)
     _G.AimEnabled = state 
 end)
 
@@ -217,7 +242,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
-createToggle("NOCLIP", function(state)
+createToggle(MainFrame, "NOCLIP", 102, function(state)
     _G.Noclip = state 
     if not state and localPlayer.Character then
         pcall(function()
@@ -242,51 +267,25 @@ task.spawn(function()
     end
 end)
 
-createToggle("SPEEDHACK", function(state)
+createToggle(MainFrame, "SPEEDHACK", 154, function(state)
     speedEnabled = state
 end)
 
 -- =======================================================
--- 4. UNDETECTABLE DRAWING BOX ESP (БЕСПАЛЕВНЫЙ ВХ)
+-- ГЛАВНАЯ КНОПКА ОТКРЫТИЯ ОКНА ESP
 -- =======================================================
-_G.EspEnabled = false
+createToggle(MainFrame, "PLAYER ESP (WH)", 206, function(state)
+    EspFrame.Visible = state
+end)
+
+
+-- =======================================================
+-- ЛОГИКА ОПЕНСУРСНОГО ESP ИЗ ТВОЕГО КОДА
+-- =======================================================
 local boxes = {}
+local highlights = {}
+local beamTracers = {}
 
--- Создаем скрытые рамки для рисования поверх экрана
-local function createEspBox(player)
-    if boxes[player] then return end
-    
-    local box = Drawing.new("Square")
-    box.Visible = false
-    box.Color = Color3.fromRGB(0, 255, 150) -- Неоново-зеленый цвет рамок
-    box.Thickness = 2
-    box.Filled = false
-    
-    boxes[player] = box
-end
-
-for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= localPlayer then createEspBox(player) end
-end
-
-Players.PlayerAdded:Connect(function(player)
-    if player ~= localPlayer then createEspBox(player) end
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    if boxes[player] then
-        boxes[player]:Remove()
-        boxes[player] = nil
-    end
-end)
-
--- Постоянный цикл обновления позиций рамок
-RunService.RenderStepped:Connect(function()
-    for player, box in pairs(boxes) do
-        if _G.EspEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local rootPart = player.Character.HumanoidRootPart
-            local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
-            
-            if onScreen then
-                -- Рассчитываем размер рамки в зависимости от дистанции до игрока
-                local scale = 1 / (screenPos.Z * math.tan(math.rad(camera.FieldOfView / 2))) * 1000
+local boxESPEnabled = false
+local chamsEnabled = false
+local tracerEnabled = false
