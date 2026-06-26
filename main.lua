@@ -25,7 +25,7 @@ Corner.Parent = MainFrame
 -- ЗАГЛОВОК (НАДПИСЬ QWIXZ CHEAT)
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "QWIXZ CHEAT"
+Title.Text = "fleeca4kscipt"
 Title.TextColor3 = Color3.fromRGB(0, 255, 150) -- Красивый неоновый зеленый
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 20
@@ -40,7 +40,7 @@ local function createToggle(text, callback)
     ToggleBtn.Size = UDim2.new(0, 210, 0, 45)
     ToggleBtn.Position = UDim2.new(0, 20, 0, 40 + (buttonCount * 50) - 40)
     ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    ToggleBtn.Text = text .. ": ВЫКЛ"
+    ToggleBtn.Text = text .. ": off"
     ToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
     ToggleBtn.Font = Enum.Font.GothamMedium
     ToggleBtn.TextSize = 14
@@ -55,11 +55,11 @@ local function createToggle(text, callback)
         enabled = not enabled
         if enabled then
             ToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 75, 45)
-            ToggleBtn.Text = text .. ": ВКЛ"
+            ToggleBtn.Text = text .. ": on"
             ToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
         else
             ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-            ToggleBtn.Text = text .. ": ВЫКЛ"
+            ToggleBtn.Text = text .. ": off"
             ToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
         end
         callback(enabled)
