@@ -8,7 +8,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Fleecaa4kMenu"
 pcall(function() ScreenGui.Parent = game.CoreGui end)
 
--- MAIN WINDOW (Компактный размер под 3 кнопки)
+-- MAIN WINDOW (Compact size for 3 buttons)
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 250, 0, 210)
 MainFrame.Position = UDim2.new(0.5, -125, 0.4, -105)
@@ -34,7 +34,7 @@ Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.BackgroundTransparency = 1
 Title.Parent = MainFrame
 
--- CLOSE BUTTON (X) В УГЛУ ГЛАВНОГО МЕНЮ
+-- CLOSE BUTTON (X) IN THE CORNER
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -35, 0, 5)
@@ -75,7 +75,7 @@ OpenBtn.MouseButton1Click:Connect(function()
     OpenBtn.Visible = false
 end)
 
--- ФУНКЦИЯ ДЛЯ КНОПОК-ПЕРЕКЛЮЧАТЕЛЕЙ
+-- TOGGLE CREATOR FUNCTION
 local buttonCount = 0
 local function createToggle(text, callback)
     buttonCount = buttonCount + 1
@@ -117,17 +117,19 @@ local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 -- =======================================================
--- 1. НАСТРОЙКА ТВОЕГО АИМА
+-- 1. НАСТРОЙКА ТВОЕГО ОБНОВЛЕННОГО АИМА (HEAD + AUTO-SWAP)
 -- =======================================================
 _G.AimEnabled = false 
 local isAiming = false
 local currentTarget = nil 
+
+-- НАСТРОЙКИ КРУГА
 local FOV_RADIUS = 90         
 local CIRCLE_COLOR = Color3.fromRGB(255, 0, 50) 
 local CIRCLE_THICKNESS = 2.5    
 
 local fovCircle = Drawing.new("Circle")
-fovCircle.Visible = false 
+fovCircle.Visible = false -- Скрыт по дефолту
 fovCircle.Color = CIRCLE_COLOR
 fovCircle.Thickness = CIRCLE_THICKNESS
 fovCircle.NumSides = 64 
@@ -140,25 +142,35 @@ local function updateCirclePosition()
     fovCircle.Position = screenCenter
 end
 
+local function isValidTarget(player)
+    if player and player ~= localPlayer and player.Character then
+        local head = player.Character:FindFirstChild("Head")
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        if head and humanoid and humanoid.Health > 0 then
+            return true
+        end
+    end
+    return false
+end
+
 local function getClosestPlayerInFOV()
     local closestPlayer = nil
     local shortestDistance = FOV_RADIUS
     local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
 
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= localPlayer and player.Character then
+        if isValidTarget(player) then
             pcall(function()
-                local root = player.Character:FindFirstChild("HumanoidRootPart")
-                local humanoid = player.Character:FindFirstChild("Humanoid")
-                if root and humanoid and humanoid.Health > 0 then
-                    local screenPosition, onScreen = camera:WorldToViewportPoint(root.Position)
-                    if onScreen then
-                        local enemyScreenPos = Vector2.new(screenPosition.X, screenPosition.Y)
-                        local distanceToCenter = (screenCenter - enemyScreenPos).Magnitude
-                        if distanceToCenter < shortestDistance then
-                            shortestDistance = distanceToCenter
-                            closestPlayer = player
-                        end
+                local targetPart = player.Character.Head
+                local screenPosition, onScreen = camera:WorldToViewportPoint(targetPart.Position)
+                
+                if onScreen then
+                    local enemyScreenPos = Vector2.new(screenPosition.X, screenPosition.Y)
+                    local distanceToCenter = (screenCenter - enemyScreenPos).Magnitude
+                    
+                    if distanceToCenter < shortestDistance then
+                        shortestDistance = distanceToCenter
+                        closestPlayer = player
                     end
                 end
             end)
@@ -170,14 +182,18 @@ end
 RunService.RenderStepped:Connect(function()
     if _G.AimEnabled then
         updateCirclePosition() 
-        fovCircle.Visible = true 
-        if isAiming and currentTarget and currentTarget.Character then
-            local targetPart = currentTarget.Character:FindFirstChild("HumanoidRootPart")
-            local humanoid = currentTarget.Character:FindFirstChild("Humanoid")
-            if targetPart and humanoid and humanoid.Health > 0 then
-                camera.CFrame = CFrame.new(camera.CFrame.Position, targetPart.Position)
-            else
-                currentTarget = nil 
+        fovCircle.Visible = true
+
+        if isAiming then
+            if not currentTarget or not isValidTarget(currentTarget) then
+                currentTarget = getClosestPlayerInFOV()
+            end
+
+            if currentTarget and currentTarget.Character then
+                local targetPart = currentTarget.Character:FindFirstChild("Head")
+                if targetPart then
+                    camera.CFrame = CFrame.new(camera.CFrame.Position, targetPart.Position)
+                end
             end
         end
     else
@@ -194,6 +210,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         currentTarget = getClosestPlayerInFOV()
     end
 end)
+
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         isAiming = false
